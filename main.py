@@ -28,9 +28,9 @@ MODIFIER_RESET_DELAY = 0.05
 # Predefined switching styles
 HOTKEY_STYLES = {
     "alt": [e.KEY_LEFTALT, e.KEY_LEFTSHIFT],
-    "meta": [e.KEY_LEFTMETA, e.KEY_SPACE],  # Default
+    "meta": [e.KEY_LEFTMETA, e.KEY_SPACE],
     "caps": [e.KEY_CAPSLOCK],
-    "ctrl": [e.KEY_LEFTCTRL, e.KEY_LEFTSHIFT],
+    "ctrl": [e.KEY_LEFTCTRL, e.KEY_LEFTSHIFT],  # Default
 }
 
 
@@ -194,7 +194,7 @@ class InputBuffer:
         self.last_key_time = now
 
         # Clear by Enter/Tab/Esc - end of phrase
-        if keycode in [e.KEY_ENTER, e.KEY_KPENTER, e.KEY_TAB, e.KEY_ESC]:
+        if keycode in [e.KEY_ENTER, e.KEY_KPENTER, e.KEY_TAB, e.KEY_ESC, e.KEY_SPACE]:
             if self.buffer:
                 self.buffer = []
             return
@@ -237,7 +237,7 @@ class MagShift:
             switch_keys: Optional list of key codes for layout switching hotkey
         """
         # Default to Meta+Space if nothing passed
-        self.switch_keys = switch_keys if switch_keys else HOTKEY_STYLES['meta']
+        self.switch_keys = switch_keys if switch_keys else HOTKEY_STYLES['ctrl']
 
         # Initialize input device
         if device_path:
@@ -266,7 +266,7 @@ class MagShift:
         self.input_buffer = InputBuffer()
         self.last_press_time = 0
         self.trigger_released = True
-        self.trigger_btn = e.KEY_RIGHTSHIFT
+        self.trigger_btn = e.KEY_LEFTSHIFT
         self.shift_pressed = False
         self.ctrl_pressed = False
         self.meta_pressed = False
@@ -481,7 +481,7 @@ def main():
     parser.add_argument("-d", "--device", help="Path to input device (optional)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument("--list", action="store_true", help="List available devices")
-    parser.add_argument("-k", "--hotkey", choices=HOTKEY_STYLES.keys(), default="meta", help="Hotkey style")
+    parser.add_argument("-k", "--hotkey", choices=HOTKEY_STYLES.keys(), default="ctrl", help="Hotkey style")
 
     parser.add_argument("-n", "--numlock", action="store_true", help="Force NumLock ON and exit")
     parser.add_argument("--auto-numlock", action="store_true", help="Enable NumLock on start (for service mode)")
