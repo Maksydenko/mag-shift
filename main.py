@@ -16,7 +16,7 @@ from evdev import InputDevice, UInput, ecodes as e, list_devices
 VERSION = "1.0.5"
 DOUBLE_PRESS_DELAY = 0.4  # seconds - max interval between double-press
 TYPING_TIMEOUT = 1  # seconds - buffer reset after inactivity
-MAX_BUFFER_SIZE = 20  # maximum tracked keystrokes
+# MAX_BUFFER_SIZE = 20  # maximum tracked keystrokes
 
 # Hardware timing delays (TUNED FOR STABILITY)
 HOTKEY_PRESS_DURATION = 0.05
@@ -186,15 +186,15 @@ class InputBuffer:
             is_shifted: Whether shift was pressed during keystroke
             modifier_pressed: Whether any modifier (ctrl/meta/alt) was pressed
         """
-        now = time.time()
+        # now = time.time()
         # Clear by Timeout
-        if (now - self.last_key_time) > TYPING_TIMEOUT:
-            if self.buffer:
-                self.buffer = []
-        self.last_key_time = now
+        # if (now - self.last_key_time) > TYPING_TIMEOUT:
+        #     if self.buffer:
+        #         self.buffer = []
+        # self.last_key_time = now
 
         # Clear by Enter/Tab/Esc - end of phrase
-        if keycode in [e.KEY_ENTER, e.KEY_KPENTER, e.KEY_TAB, e.KEY_ESC, e.KEY_SPACE]:
+        if keycode in [e.KEY_ENTER, e.KEY_KPENTER, e.KEY_TAB, e.KEY_ESC]:
             if self.buffer:
                 self.buffer = []
             return
@@ -210,11 +210,16 @@ class InputBuffer:
                 self.buffer = []
             return
 
+        # Clear by Space - end of word
+        if keycode in self.trackable_range and self.buffer and self.buffer[-1][0] == e.KEY_SPACE:
+            print(self.buffer)
+            self.buffer = []
+
         # Use Spase as regular symbol
         if keycode == e.KEY_SPACE or keycode in self.trackable_range:
             self.buffer.append((keycode, is_shifted))
-            if len(self.buffer) > MAX_BUFFER_SIZE:
-                self.buffer.pop(0)
+            # if len(self.buffer) > MAX_BUFFER_SIZE:
+                # self.buffer.pop(0)
 
     def get_last_phrase(self) -> list[tuple[int, bool]]:
         """Extract the last typed phrase from buffer.
