@@ -271,7 +271,7 @@ class MagShift:
         self.input_buffer = InputBuffer()
         self.last_press_time = 0
         self.trigger_released = True
-        self.trigger_btn = e.KEY_LEFTSHIFT
+        self.trigger_btns = {e.KEY_LEFTSHIFT, e.KEY_RIGHTSHIFT}
         self.shift_pressed = False
         self.ctrl_pressed = False
         self.meta_pressed = False
@@ -409,7 +409,7 @@ class MagShift:
         """Main event loop for keyboard monitoring and correction.
 
         Monitors keyboard input events and triggers layout correction on
-        double-press of the trigger key (Right Shift by default).
+        double-press of Left or Right Shift.
 
         The loop handles:
         - Shift key state tracking for proper case handling
@@ -439,18 +439,24 @@ class MagShift:
                     elif event.code in [e.KEY_LEFTALT]:  # e.KEY_RIGHTALT is important for Ґ
                         self.alt_pressed = (event.value == 1 or event.value == 2)
 
-                    # Handle trigger key (Right Shift)
-                    if event.code == self.trigger_btn:
+                    # Handle trigger keys (Left / Right Shift)
+                    if event.code in self.trigger_btns:
 
                         # Key press
                         if event.value == 1:
-                            now = time.time()
-                            if (now - self.last_press_time < DOUBLE_PRESS_DELAY) and self.trigger_released:
-                                self.pending_action = True
+                            # Ignore Shift inside hotkeys (Ctrl/Alt/Meta + Shift)
+                            other_mods = self.ctrl_pressed or self.meta_pressed or self.alt_pressed
+                            if other_mods:
                                 self.last_press_time = 0
-                            else:
-                                self.last_press_time = now
                                 self.pending_action = False
+                            else:
+                                now = time.time()
+                                if (now - self.last_press_time < DOUBLE_PRESS_DELAY) and self.trigger_released:
+                                    self.pending_action = True
+                                    self.last_press_time = 0
+                                else:
+                                    self.last_press_time = now
+                                    self.pending_action = False
 
                             self.trigger_released = False
 
@@ -458,20 +464,19 @@ class MagShift:
                         elif event.value == 0:
                             self.trigger_released = True
 
-                            # Execute correction on double-press
+                            # Execute correction on bare double-press only
                             if self.pending_action:
                                 self.fix_last_word()
                                 self.pending_action = False
 
                     # Track other keys in buffer
                     elif event.value in [1, 2]:
-                        if event.code != self.trigger_btn:
-                            modifier_pressed = self.ctrl_pressed or self.meta_pressed or self.alt_pressed
-                            self.input_buffer.add(event.code, self.shift_pressed, modifier_pressed)
+                        modifier_pressed = self.ctrl_pressed or self.meta_pressed or self.alt_pressed
+                        self.input_buffer.add(event.code, self.shift_pressed, modifier_pressed)
 
-                        # Cancel pending action if other key pressed
-                        if self.last_press_time > 0:
-                            self.last_press_time = 0
+                        # Typing / Shift-as-capital cancels the double-tap gesture
+                        self.last_press_time = 0
+                        self.pending_action = False
 
         except KeyboardInterrupt:
             sys.stderr.write("\n[✓] Stopped by user.\n")
